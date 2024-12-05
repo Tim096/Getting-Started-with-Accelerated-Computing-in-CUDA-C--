@@ -39,7 +39,7 @@ int main()
   float *c;
 
   a = (float *)malloc(size);
-  b = (float *)malloc(size);
+  b = (float *)malloc(size);  git init
   c = (float *)malloc(size);
 
   initWith(3, a, N);
