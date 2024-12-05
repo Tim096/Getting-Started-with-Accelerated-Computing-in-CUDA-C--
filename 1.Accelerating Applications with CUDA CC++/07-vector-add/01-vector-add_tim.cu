@@ -38,9 +38,14 @@ int main()
   float *b;
   float *c;
 
-  a = (float *)malloc(size);
-  b = (float *)malloc(size);  git init
-  c = (float *)malloc(size);
+  // a = (float *)malloc(size);
+  // b = (float *)malloc(size);
+  // c = (float *)malloc(size);
+  
+  // 將malloc改為CUDA統一記憶體管理
+  cudaMallocManaged(&a, size);
+  cudaMallocManaged(&b, size);
+  cudaMallocManaged(&c, size);
 
   initWith(3, a, N);
   initWith(4, b, N);
