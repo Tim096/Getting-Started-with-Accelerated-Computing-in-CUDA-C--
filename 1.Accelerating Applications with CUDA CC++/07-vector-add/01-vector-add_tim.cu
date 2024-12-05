@@ -42,7 +42,7 @@ int main()
   // b = (float *)malloc(size);
   // c = (float *)malloc(size);
   
-  // 將malloc改為CUDA統一記憶體管理
+  // 將malloc改為CUDA統一記憶體管理 123
   cudaMallocManaged(&a, size);
   cudaMallocManaged(&b, size);
   cudaMallocManaged(&c, size);
