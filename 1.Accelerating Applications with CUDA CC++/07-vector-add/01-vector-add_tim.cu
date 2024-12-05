@@ -8,11 +8,17 @@ void initWith(float num, float *a, int N)
   }
 }
 
+__global__
 void addVectorsInto(float *result, float *a, float *b, int N)
 {
-  for(int i = 0; i < N; ++i)
-  {
-    result[i] = a[i] + b[i];
+  // for(int i = 0; i < N; ++i)
+  // {
+  //   result[i] = a[i] + b[i];
+  // }
+  // 將for迴圈改為CUDA核心函式
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < N){
+    result[idx] = a[idx] + b[idx];
   }
 }
 
@@ -42,7 +48,7 @@ int main()
   // b = (float *)malloc(size);
   // c = (float *)malloc(size);
   
-  // 將malloc改為CUDA統一記憶體管理 123
+  // 將malloc改為CUDA統一記憶體管理
   cudaMallocManaged(&a, size);
   cudaMallocManaged(&b, size);
   cudaMallocManaged(&c, size);
@@ -51,7 +57,11 @@ int main()
   initWith(4, b, N);
   initWith(0, c, N);
 
-  addVectorsInto(c, a, b, N);
+  int theadsPerBlock = 256;
+  int blocksPerGrid = (N + theadsPerBlock - 1) / theadsPerBlock;
+  // addVectorsInto(c, a, b, N);
+  // 將函式改為CUDA核心函式
+  addVectorsInto<<<blocksPerGrid, threadPerBlock>>>(c, a, b, N);
 
   checkElementsAre(7, c, N);
 
