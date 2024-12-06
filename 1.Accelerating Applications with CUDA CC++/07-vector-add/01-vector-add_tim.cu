@@ -1,71 +1,83 @@
 #include <stdio.h>
+#include <assert.h>
 
-void initWith(float num, float *a, int N)
-{
-  for(int i = 0; i < N; ++i)
-  {
-    a[i] = num;
-  }
-}
-
-__global__
-void addVectorsInto(float *result, float *a, float *b, int N)
-{
-  // for(int i = 0; i < N; ++i)
-  // {
-  //   result[i] = a[i] + b[i];
-  // }
-  // 將for迴圈改為CUDA核心函式
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < N){
-    result[idx] = a[idx] + b[idx];
-  }
-}
-
-void checkElementsAre(float target, float *array, int N)
-{
-  for(int i = 0; i < N; i++)
-  {
-    if(array[i] != target)
-    {
-      printf("FAIL: array[%d] - %0.0f does not equal %0.0f\n", i, array[i], target);
-      exit(1);
+// 錯誤檢查包裝函數
+inline cudaError_t checkCuda(cudaError_t result) {
+    if (result != cudaSuccess) {
+        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+        assert(result == cudaSuccess);
     }
-  }
-  printf("SUCCESS! All values added correctly.\n");
+    return result;
 }
 
-int main()
-{
-  const int N = 2<<20;
-  size_t size = N * sizeof(float);
+// CPU初始化函數
+void initWith(float num, float *a, int N) {
+    for(int i = 0; i < N; ++i) {
+        a[i] = num;
+    }
+}
 
-  float *a;
-  float *b;
-  float *c;
+// GPU核函數
+__global__ void addVectorsInto(float *result, float *a, float *b, int N) {
+    // 計算全局索引
+    int index = threadIdx.x + blockIdx.x * blockDim.x;
+    // 計算步距
+    int stride = blockDim.x * gridDim.x;
+    
+    // 使用grid-stride loop處理大數據
+    for(int i = index; i < N; i += stride) {
+        result[i] = a[i] + b[i];
+    }
+}
 
-  // a = (float *)malloc(size);
-  // b = (float *)malloc(size);
-  // c = (float *)malloc(size);
-  
-  // 將malloc改為CUDA統一記憶體管理
-  cudaMallocManaged(&a, size);
-  cudaMallocManaged(&b, size);
-  cudaMallocManaged(&c, size);
+// 結果驗證函數
+void checkElementsAre(float target, float *array, int N) {
+    for(int i = 0; i < N; i++) {
+        if(array[i] != target) {
+            printf("FAIL: array[%d] - %0.0f does not equal %0.0f\n", 
+                   i, array[i], target);
+            exit(1);
+        }
+    }
+    printf("SUCCESS! All values added correctly.\n");
+}
 
-  initWith(3, a, N);
-  initWith(4, b, N);
-  initWith(0, c, N);
+int main() {
+    const int N = 2<<20;  // 約2M元素
+    size_t size = N * sizeof(float);
 
-  int theadsPerBlock = 256;
-  int blocksPerGrid = (N + theadsPerBlock - 1) / theadsPerBlock;
-  // addVectorsInto(c, a, b, N);
-  // 將函式改為CUDA核心函式
-  addVectorsInto<<<blocksPerGrid, threadPerBlock>>>(c, a, b, N);
+    // 宣告指標
+    float *a, *b, *c;
 
-  checkElementsAre(7, c, N);
+    // 配置統一記憶體
+    checkCuda( cudaMallocManaged(&a, size) );
+    checkCuda( cudaMallocManaged(&b, size) );
+    checkCuda( cudaMallocManaged(&c, size) );
 
-  free(a);
-  free(b);
-  free(c);
+    // 初始化數據
+    initWith(3, a, N);
+    initWith(4, b, N);
+    initWith(0, c, N);
+
+    // 設定執行組態
+    size_t threadsPerBlock = 256;
+    size_t numberOfBlocks = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    // 啟動核函數
+    addVectorsInto<<<numberOfBlocks, threadsPerBlock>>>(c, a, b, N);
+
+    // 錯誤檢查
+    checkCuda( cudaGetLastError() );
+    // 同步等待
+    checkCuda( cudaDeviceSynchronize() );
+
+    // 驗證結果
+    checkElementsAre(7, c, N);
+
+    // 釋放記憶體
+    checkCuda( cudaFree(a) );
+    checkCuda( cudaFree(b) );
+    checkCuda( cudaFree(c) );
+
+    return 0;
 }
