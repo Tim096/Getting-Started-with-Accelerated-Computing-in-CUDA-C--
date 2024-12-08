@@ -32,6 +32,7 @@ void step_kernel_mod(int ni, int nj, float fact, float* temp_in, float* temp_out
   }
 }
 
+
 void step_kernel_ref(int ni, int nj, float fact, float* temp_in, float* temp_out)
 {
   int i00, im10, ip10, i0m1, i0p1;

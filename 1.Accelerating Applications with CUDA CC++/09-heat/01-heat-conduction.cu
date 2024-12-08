@@ -14,7 +14,6 @@ void step_kernel_mod(int ni, int nj, float fact, float* temp_in, float* temp_out
   int i00, im10, ip10, i0m1, i0p1;
   float d2tdx2, d2tdy2;
 
-
   // loop over all points in domain (except boundary)
   for ( int j=1; j < nj-1; j++ ) {
     for ( int i=1; i < ni-1; i++ ) {
