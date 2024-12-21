@@ -55,7 +55,7 @@ int main()
 {
   // 獲取設備資訊
   int deviceId;
-  int numberOfSMs;
+  int numberOfSMs; // SM: Stream Multiprocessor, 即多處理器
   cudaGetDevice(&deviceId);
   cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
   printf("Device ID: %d\tNumber of SMs: %d\n", deviceId, numberOfSMs);
